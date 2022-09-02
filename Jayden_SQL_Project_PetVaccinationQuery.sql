@@ -2,6 +2,9 @@
 Using a database named 'Animal_Shelter' to finish a following tasks.
 The database contains 9 tables each have some columns regarding a dog/cat's information.
 
+
+
+
 1. Joins
 
 The task:
@@ -80,7 +83,8 @@ Use the correct logical group by expressions.
 """
 
 
---- First, test counts
+--- First, create dummy aggregates to follow grouping rules
+--- Also test out different COUNT() result:
 
 SELECT 
     A.Name
@@ -118,7 +122,6 @@ ORDER BY A.Species, A.Name
 
 
 --- Then continue to deal with date range:
-
 
 SELECT 
     A.Name
