@@ -17,6 +17,7 @@ SELECT *
 FROM Animals AS A 
     INNER JOIN
     Vaccinations AS V
+        ON 
     
 
 
