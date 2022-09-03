@@ -217,19 +217,19 @@ Find out the Max Fee for each type of animal
 
 """
 
--- The intuitive approach is to modified by adding WHERE clause in the subquery:
+-- The intuitive approach is to modified by adding WHERE clause in the subquery for EACH species:
 
 SELECT *
     ,(
         SELECT MAX(Adoption_Fee)
         FROM Adoptions
-        WHERE Species = 'Dog'
+        WHERE Species = 'Dog' -- repeat for each species
         ) AS MaxFee
 FROM Adoptions;
 
 -- To add a automatic feature to the codes
 -- We can set Species = the species name in the Outter Query table
--- Thus we need to denote Inner query source and Outter query source
+-- Thus we need to denote Inner query source and Outter query source as A2 and A1
 
 SELECT *
     ,(
@@ -270,12 +270,12 @@ WHERE EXISTS (
                 )
 
 -- A third way to do this is to use subquery as a filter:
--- WHERE...IN
+-- WHERE...(NOT) IN
 
 SELECT *
 FROM Persons
 WHERE Email IN (
-                SELECT Adopter_Email 
+                SELECT Adopter_Email
                 FROM Adoptions
                 )
 
@@ -287,26 +287,74 @@ Find animals that were never adopted
 
 """
 
--- The first method is Left exclusive join
--- A LEFT JOIN B ON...WHERE B.Key is NULL
-
-"""
-
-3.4 Set Operator
-
-Find animals that were never adopted
-
-"""
-
--- The first method is Left exclusive join
--- A LEFT JOIN B ON...WHERE B.Key is NULL
+-- The first method is to use Left Exclusive Join
+--- Structure: A LEFT (OUTER) JOIN B ON...WHERE B.Key is NULL
 
 SELECT DISTINCT AN.Name, AN.Species 
 FROM Animals AS AN
-	LEFT JOIN
-	Adoption AS AD
-	ON AN.Email = AD.Email
-WHERE AD.Email IS NULL
-            
+	LEFT OUTER JOIN
+	Adoptions AS AD
+	ON AN.Name = AD.Name
+    AND
+    AN.Species = AD.Species
+WHERE AD.Name IS NULL
 
+-- The second method is to use NOT EXISTS
+-- This method does not need to contain DISTINCT
+
+SELECT AN.Name, AN.Species 
+FROM Animals AS AN
+WHERE NOT EXISTS (
+                    SELECT 1 -- random name, can be anything
+                    FROM Adoptions AS AD
+                    WHERE AN.Name = AD.Name
+                    )
+
+-- The most elegant method is to use EXCEPT
+
+SELECT Name, Species
+FROM Animals
+EXCEPT
+SELECT Name, Species
+FROM Adoptions
+
+
+"""
+
+3.5 Show breeds that were never adopted
+
+Multiple animal names can belong to same breed
+None breed exists as NULL.
+
+"""
+-- The Left Outter Join / Not Exists methods won't work 
+---because they only return animals not breed
+
+-- The 'Not in' method works but is a bit complicated
+--- Must add WHERE...IS NOT NULL at the end of the subquery
+--- Otherwise NOT IN (NULL) yields unknown, i.e. no value returned
+
+SELECT DISTINCT AN1.Breed, AN1.Species
+FROM Animals AS AN1
+WHERE AN1.Breed NOT IN (
+                    SELECT AN2.Breed
+                    FROM Animals AS AN2 
+                    INNER JOIN Adoptions AS AD
+                    ON AN2.Name = AD.Name
+                    AND
+                    AN2.Species = AD.Species
+                    WHERE AN2.Breed IS NOT NULL
+                    )
+
+-- Use EXCEPT is much easier, just bridge the total set with the adopted set using EXCEPT
+
+SELECT AN1.Breed
+FROM Animals AS AN1
+EXCEPT
+SELECT AN2.Breed
+FROM Animals AS AN2
+    INNER JOIN
+    Adoptions AS AD
+    ON AN2.Name = AD.Name
+    AND AN2.Species = AD.Species      
 
