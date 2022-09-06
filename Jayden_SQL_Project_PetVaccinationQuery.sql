@@ -45,7 +45,7 @@ FROM Animals AS A
         ON V.Email = P.Email;
 
 --- But this only shows the animals (95 Rows) which are vaccinated.
---- to show all animals, need to left out join A and V. 
+--- to show all animals, need to left outter join A and V. 
 --- This won't work without quoting the remaining joins to regulate the execution order.
 
 SELECT 
@@ -97,7 +97,7 @@ Use the correct logical group by expressions.
 
 """
 
---- First, create dummy aggregates in order to comply with grouping rules
+--- First, create dummy aggregates in order to comply with grouping rules, can use MAX()
 --- Also test out different COUNT() result:
 
 SELECT 
