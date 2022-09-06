@@ -371,6 +371,72 @@ FROM Animals AS AN2
     AND AN2.Species = AD.Species
 
 
+"""
+3.6 JOIN - show adopters who adopted 2 animals in 1 day
+"""
 
-      
+-- use SELF (INNER) JOIN the table with itself
+-- This will produce a cross join matrix with Name1+Species1 cross Name2+Speices2
+
+SELECT A1.Adopter_Email
+    ,A1.Adoption_Date
+    ,A1.Name AS Name1
+    ,A1.Species AS Species1
+    ,A2.Name AS Name2
+    ,A1.Species AS Species2
+
+FROM Adoptions AS A1
+    INNER JOIN
+    Adoptions AS A2
+    ON A1.Adopter_Email = A2.Adopter_Email
+    AND A1.Adoption_Date = A2.Adoption_Date
+    AND A1.Name != A2.Name
+ORDER BY A1.Adopter_Email, A1.Adoption_Date;
+
+-- But there is the problem of a name / species swap in two rows. We only need one row.
+-- One solution is to change the evaluator to > instead of !=, so the extral row will be eliminated
+
+SELECT A1.Adopter_Email
+    ,A1.Adoption_Date
+    ,A1.Name AS Name1
+    ,A1.Species AS Species1
+    ,A2.Name AS Name2
+    ,A1.Species AS Species2
+
+FROM Adoptions AS A1
+    INNER JOIN
+    Adoptions AS A2
+    ON A1.Adopter_Email = A2.Adopter_Email
+    AND A1.Adoption_Date = A2.Adoption_Date
+    AND A1.Name > A2.Name
+ORDER BY A1.Adopter_Email, A1.Adoption_Date;
+
+-- But, this will ignore the same name animal from a different species
+/* 
+First thought might be to add OR A1.Species > A2.Species
+However, this does not make a difference because OR
+AND neither works for all because there are NAME > NAME but Species = Species
+The solution is to add specifc conditions
+*/
+
+SELECT A1.Adopter_Email
+    ,A1.Adoption_Date
+    ,A1.Name AS Name1
+    ,A1.Species AS Species1
+    ,A2.Name AS Name2
+    ,A1.Species AS Species2
+
+FROM Adoptions AS A1
+    INNER JOIN
+    Adoptions AS A2
+    ON A1.Adopter_Email = A2.Adopter_Email
+    AND A1.Adoption_Date = A2.Adoption_Date
+    AND (
+            (A1.Name = A2.Name AND A1.Species > A2.Species) 
+            OR
+            (A1.Name > A2.Name AND A1.Species = A2.Species)
+            OR
+            (A1.Name > A2.Name AND A1.Species <> A2.Species)
+        )
+ORDER BY A1.Adopter_Email, A1.Adoption_Date;
 
