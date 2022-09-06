@@ -130,12 +130,12 @@ FROM Animals AS A
 WHERE A.Species != 'Rabbit' 
     AND (V.Vaccine != 'Rabies' OR V.Vaccine IS NULL)
     --- to add only 'Vac != Rabies' is NOT ok for it does not return NULL
-    --- Dealt with NULL, include them in return using 'OR...IS NULL'
+    --- Dealt with NULL, include them in return using >> 'OR...IS NULL' <<
 GROUP BY A.Species, A.Name
 ORDER BY A.Species, A.Name;
 
 
---- Then continue to deal with date range, again, need to include NULL:
+--- Then continue to deal with date range, again, need to include NULL with OR MAX(datestemp) IS NULL:
 
 SELECT 
     A.Name
@@ -175,12 +175,13 @@ and a thrid column shows the discount against Max fee.
 
 """
 
+-- Simple Subquery:
 -- Created an independent query to show Max fee
 SELECT MAX(Adoption_Fee)
 FROM Adoptions
 
 -- Use it as a subquery
--- This adds a new column of MaxFee (All 100) after the last 'Adoption_Fee' Column. 
+-- This adds a new column of MaxFee (All valued 100) after the last 'Adoption_Fee' Column. 
 SELECT *
     ,(
         SELECT MAX(Adoption_Fee)
@@ -188,7 +189,9 @@ SELECT *
         ) AS Max_Fee
 FROM Adoptions;
 
--- Calculate discount using Discount% = (MaxFee - Adop.fee)*100/MaxFee
+
+-- More complicated subqueries:
+-- In addition to MaxFee, calculate discount using Discount% = (MaxFee - Adop.fee)*100/MaxFee
 -- Has to include the same subquery (MaxFee) three times:
 
 SELECT *
@@ -209,8 +212,8 @@ SELECT *
         ) AS Discount_Percent
 FROM Adoptions;
 
-"""
 
+"""
 3.2
 
 Find out the Max Fee for each type of animal
@@ -227,9 +230,9 @@ SELECT *
         ) AS MaxFee
 FROM Adoptions;
 
--- To add a automatic feature to the codes
+-- But this is too complicated. Need to add an automatic feature to the codes
 -- We can set Species = the species name in the Outter Query table
--- Thus we need to denote Inner query source and Outter query source as A2 and A1
+-- Thus we need to denote INNER query source and OUTTER query source as A2 and A1
 
 SELECT *
     ,(
@@ -237,9 +240,9 @@ SELECT *
         FROM Adoptions AS A2
         WHERE A2.Species = A1.Species
     ) AS Max_Fee
-FROM Adoption AS A1;
+FROM Adoptions AS A1;
 
--- This will show differentiated Max Fees in the Max_Fee column, according to A1's species name
+-- ** This will show differentiated Max Fees in the Max_Fee column, according to A1's species name
 -- This method replaces the approach to first first calcuate out each species Max fee, then use CASE to create a new column. 
 
 """
@@ -251,14 +254,14 @@ Show people who adopted at least one animal
 """
 
 -- My first thought is to JOIN Persons table with Adoptions table:
--- (Forgot about the DISTINCT at first - one may adopt multiple animals)
+-- (Forgot about the DISTINCT too - one may adopt multiple animals)
 
 SELECT DISTINCT P.*
 FROM Persons AS P
     INNER JOIN Adoptions AS A
     ON A.Adopter_Email = P.Email;
 
--- I found another way to do this using EXISTS
+-- Found another way to do this using EXISTS
 -- Correlational subquery: WHERE EXISTS (Subquery)
 
 SELECT *
@@ -269,8 +272,8 @@ WHERE EXISTS (
                 WHERE A.Adopter_Email = P.Email
                 )
 
--- A third way to do this is to use subquery as a filter:
--- WHERE...(NOT) IN
+-- A third way to do this is to use subquery as a filter
+-- using WHERE...(NOT) IN
 
 SELECT *
 FROM Persons
@@ -288,7 +291,12 @@ Find animals that were never adopted
 """
 
 -- The first method is to use Left Exclusive Join
---- Structure: A LEFT (OUTER) JOIN B ON...WHERE B.Key is NULL
+
+/* Structure: 
+A LEFT (OUTER) JOIN B 
+    ON A.Key = B.Key 
+WHERE B.Key is NULL
+*/
 
 SELECT DISTINCT AN.Name, AN.Species 
 FROM Animals AS AN
@@ -310,7 +318,7 @@ WHERE NOT EXISTS (
                     WHERE AN.Name = AD.Name
                     )
 
--- The most elegant method is to use EXCEPT
+-- !! The most elegant method is to use EXCEPT
 
 SELECT Name, Species
 FROM Animals
@@ -324,15 +332,18 @@ FROM Adoptions
 3.5 Show breeds that were never adopted
 
 Multiple animal names can belong to same breed
-None breed exists as NULL.
+None breed does exists as 'NULL'.
 
 """
 -- The Left Outter Join / Not Exists methods won't work 
----because they only return animals not breed
+--- because they only return animals not adopted, rather than breed
 
--- The 'Not in' method works but is a bit complicated
---- Must add WHERE...IS NOT NULL at the end of the subquery
---- Otherwise NOT IN (NULL) yields unknown, i.e. no value returned
+-- The 'Not in' method works, but:
+/* 
+Must write WHERE...IS NOT NULL at the end of the subquery
+Otherwise NOT IN (NULL) yields unknown, 
+because not in unknown is unknown, no value returned
+*/
 
 SELECT DISTINCT AN1.Breed, AN1.Species
 FROM Animals AS AN1
@@ -347,6 +358,7 @@ WHERE AN1.Breed NOT IN (
                     )
 
 -- Use EXCEPT is much easier, just bridge the total set with the adopted set using EXCEPT
+-- From the animal table, deduce breeds appear in the adoption table
 
 SELECT AN1.Breed
 FROM Animals AS AN1
@@ -356,5 +368,9 @@ FROM Animals AS AN2
     INNER JOIN
     Adoptions AS AD
     ON AN2.Name = AD.Name
-    AND AN2.Species = AD.Species      
+    AND AN2.Species = AD.Species
+
+
+
+      
 
