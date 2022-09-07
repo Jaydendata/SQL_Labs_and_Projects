@@ -496,7 +496,9 @@ FROM Animals AS A
             ,V.Vaccination_Time            
         FROM Vaccinations AS V
         WHERE V.Name = A.Name
-        AND V.Species = A.Species               
+        AND V.Species = A.Species
+        ORDER BY V.Vaccination_Time DESC
+        LIMIT 3                
     ) AS Last_Vaccinations;
 
 
@@ -508,7 +510,7 @@ SELECT A.Name
     ,A.Species
     ,A.Primary_Color
     ,A.Breed
-    ,Last_Vaccinations
+    ,Last_Vaccinations.*
 FROM Animals AS A
     LEFT OUTER JOIN LATERAL
     (
@@ -516,7 +518,9 @@ FROM Animals AS A
             ,V.Vaccination_Time            
         FROM Vaccinations AS V
         WHERE V.Name = A.Name
-        AND V.Species = A.Species               
+        AND V.Species = A.Species  
+        ORDER BY V.Vaccination_Time DESC
+        LIMIT 3             
     ) AS Last_Vaccinations
     ON TRUE;
 
@@ -528,13 +532,36 @@ SELECT A.Name
     ,A.Species
     ,A.Primary_Color
     ,A.Breed
-    ,Last_Vaccinations
+    ,Last_Vaccinations.*
 FROM Animals AS A
-    CROSS JOIN LATERAL -- Add LATERAL
+    CROSS APPLY -- Add APPLY
     (
         SELECT V.Vaccine
             ,V.Vaccination_Time            
         FROM Vaccinations AS V
         WHERE V.Name = A.Name
-        AND V.Species = A.Species               
+        AND V.Species = A.Species
+        ORDER BY V.Vaccination_Time DESC
+        OFFSET 0 ROWS FETCH NEXT 3 ROW ONLY            
     ) AS Last_Vaccinations;
+
+
+-- To show NULL vaccines use OUTER APPLY
+--- No need to add ON TRUE
+
+SELECT A.Name
+    ,A.Species
+    ,A.Primary_Color
+    ,A.Breed
+    ,Last_Vaccinations.*
+FROM Animals AS A
+    OUTER APPLY -- Add APPLY
+    (
+        SELECT V.Vaccine
+            ,V.Vaccination_Time            
+        FROM Vaccinations AS V
+        WHERE V.Name = A.Name
+        AND V.Species = A.Species
+        ORDER BY V.Vaccination_Time DESC
+        OFFSET 0 ROWS FETCH NEXT 3 ROW ONLY            
+    ) AS Last_Vaccinations;    
