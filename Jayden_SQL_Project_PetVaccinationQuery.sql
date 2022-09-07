@@ -482,13 +482,55 @@ Correlate columns between the OUTTER and INNTER (sub)queries
     SQL Server - use ...APPLY instead of ...JOIN, no need to ON...
 */
 
+-- For Postgres:show the most recent  
+
 SELECT A.Name
     ,A.Species
     ,A.Primary_Color
     ,A.Breed
     ,Last_Vaccinations
 FROM Animals AS A
-    CROSS JOIN
+    CROSS JOIN LATERAL -- Add LATERAL
+    (
+        SELECT V.Vaccine
+            ,V.Vaccination_Time            
+        FROM Vaccinations AS V
+        WHERE V.Name = A.Name
+        AND V.Species = A.Species               
+    ) AS Last_Vaccinations;
+
+
+-- However this does not include NULL (never vaccinated) animals
+-- So must use LEFT OUTER JOIN LATERAL
+--- use ON TRUE
+
+SELECT A.Name
+    ,A.Species
+    ,A.Primary_Color
+    ,A.Breed
+    ,Last_Vaccinations
+FROM Animals AS A
+    LEFT OUTER JOIN LATERAL
+    (
+        SELECT V.Vaccine
+            ,V.Vaccination_Time            
+        FROM Vaccinations AS V
+        WHERE V.Name = A.Name
+        AND V.Species = A.Species               
+    ) AS Last_Vaccinations
+    ON TRUE;
+
+
+
+-- For SQL Server:use the CROSS/OUTER APPLY
+
+SELECT A.Name
+    ,A.Species
+    ,A.Primary_Color
+    ,A.Breed
+    ,Last_Vaccinations
+FROM Animals AS A
+    CROSS JOIN LATERAL -- Add LATERAL
     (
         SELECT V.Vaccine
             ,V.Vaccination_Time            
