@@ -20,6 +20,9 @@ The task:
     role.
 
 """
+
+USE Animal_Shelter
+
 -- Need to use three tables: Animals, Vaccinations and Persons
 --- First list out all Inner Joins and then other parts
 
@@ -372,7 +375,9 @@ FROM Animals AS AN2
 
 
 """
+
 3.6 JOIN - show adopters who adopted 2 animals in 1 day
+
 """
 
 -- 1) use SELF (INNER) JOIN the table with itself
@@ -414,6 +419,7 @@ ORDER BY A1.Adopter_Email, A1.Adoption_Date;
 -- 3) But, this will ignore the same name animal from a different species
 /* 
 First thought might be to add OR A1.Species > A2.Species
+
 However, this does not make a difference because of OR
 AND neither works for all because there are NAME > NAME but Species = Species
 So need to add MULTIPLE conditions after JOIN ON
@@ -445,7 +451,48 @@ ORDER BY A1.Adopter_Email, A1.Adoption_Date;
 
 """
 3.7 Lateral Joins
-Show animals and their most recent vaccination
+
+Show animals and their most recent 3 vaccination
+
+"""
+
+-- The following won't work because subqueries much use standlone table expression
+--- V.Name = A.Name is not usually not allow 
+
+SELECT A.Name
+    ,A.Species
+    ,A.Primary_Color
+    ,A.Breed
+    ,Last_Vaccinations
+FROM Animals AS A
+    CROSS JOIN
+    (
+        SELECT V.Vaccine
+            ,V.Vaccination_Time            
+        FROM Vaccinations AS V
+        WHERE V.Name = A.Name
+        AND V.Species = A.Species               
+    ) AS Last_Vaccinations;
+
+/*
+Use newly introduced features:
 
 Correlate columns between the OUTTER and INNTER (sub)queries
+    PostgreSQL - partially support, using  ..JOIN LATERAL...ON TRUE
+    SQL Server - use ...APPLY instead of ...JOIN, no need to ON...
+*/
 
+SELECT A.Name
+    ,A.Species
+    ,A.Primary_Color
+    ,A.Breed
+    ,Last_Vaccinations
+FROM Animals AS A
+    CROSS JOIN
+    (
+        SELECT V.Vaccine
+            ,V.Vaccination_Time            
+        FROM Vaccinations AS V
+        WHERE V.Name = A.Name
+        AND V.Species = A.Species               
+    ) AS Last_Vaccinations;
