@@ -565,3 +565,43 @@ FROM Animals AS A
         ORDER BY V.Vaccination_Time DESC
         OFFSET 0 ROWS FETCH NEXT 3 ROW ONLY            
     ) AS Last_Vaccinations;    
+
+
+"""
+3.7 Lateral Joins
+
+Find purebred animals of the same species and breed
+
+Male and Female
+"""   
+
+SELECT A1.Species
+    ,A1.Breed AS Breed
+    ,A1.Name AS Male
+    ,A2.Name AS Female
+FROM Animals AS A1
+    INNER JOIN
+    Animals AS A2
+    ON A1.Species = A2.Species
+    AND A1.Breed = A2.Breed -- reduce NULLs
+ORDER BY A1.Species, A1.Breed
+
+-- There are still duplicates (in matrics) of names, so add name!=name and gender conditions
+
+SELECT A1.Species
+    ,A1.Breed AS Breed
+    ,A1.Name AS Male
+    ,A2.Name AS Female
+FROM Animals AS A1
+    INNER JOIN
+    Animals AS A2
+    ON A1.Species = A2.Species
+    AND A1.Breed = A2.Breed
+    AND A1.Name != A2.Name
+    AND A1.Gender = 'M'
+    AND A2.Gender = 'F'
+-- OR A1.Gender > A2. Gender if all in M and F (capitalized)
+ORDER BY A1.Species, A1.Breed
+
+
+
