@@ -322,8 +322,23 @@ OR DimItem.Item_ID = Lab4DataStaging.[Item_2_Id]
 
 --Now Populate the Fact Table
 INSERT INTO FactSale
-(Receipt_Unique_Key, Sale_Date_Key, Customer_Key, Customer_Address_Key, Staff_Key, Item_1_Key, Item_1_Quantity, Item_1_Unit_Price, Item_1_Sub_Total,
-	Item_2_Key, Item_2_Quantity, Item_2_Unit_Price, Item_2_Sub_Total, Total_Items_In_Sale, Receipt_Total_Sale_Amount)
+	(
+		Receipt_Unique_Key, 
+		Sale_Date_Key, 
+		Customer_Key, 
+		Customer_Address_Key, 
+		Staff_Key, 
+		Item_1_Key, 
+		Item_1_Quantity, 
+		Item_1_Unit_Price, 
+		Item_1_Sub_Total,
+		Item_2_Key, 
+		Item_2_Quantity, 
+		Item_2_Unit_Price, 
+		Item_2_Sub_Total, 
+		Total_Items_In_Sale, 
+		Receipt_Total_Sale_Amount
+	)
 	  
   SELECT  x.[Receipt_Unique_Id],
           d.[Date_Key], 
@@ -345,12 +360,12 @@ INSERT INTO FactSale
 	left join DImStaff s
 		on s.Staff_ID = x.[Staff_Id]
 	left Join DimAddress a	
-		on x.[Customer_Address_Line_1] = a.Customer_Address_Line_1
+		on x.[Customer_Address_Line_1] = a.[Customer_Address_Line_1]
 	left join DimCustomer c
 		on x.[Customer_ID] = c.Customer_ID
 	left join DimDate d
 		on x.[Sale_Date] = d.Date_ID
 	Left join DImItem i
-		on x.item_1_id = i.Item_ID
+		on x.[item_1_id] = i.Item_ID
 	left join DimItem p
 		on x.[Item_2_Id] = p.Item_ID 
