@@ -151,10 +151,6 @@ fact and dimension tables for the Star Schema. Also need to establish keys.*/
 
 
 -- Setup table for Star Schema Data Mart 
--- assumes database INFO6090_Week4Lab_Data already exists
-
-Use INFO6090_Week4Lab_Data
-GO
 -- Creates a simple star schema
 
 -- Drop tables if they exist
@@ -168,22 +164,28 @@ DROP TABLE IF EXISTS DimCustomer;
 DROP TABLE IF EXISTS DimStaff;
 DROP TABLE IF EXISTS DimDate;
 DROP TABLE IF EXISTS DimAddress;
-DROP TABLE IF EXISTS DimItem;		--After FactTable has been dropped, it is safe to drop Item Table
+DROP TABLE IF EXISTS DimItem; --After FactTable has been dropped, it is safe to drop Item Table
 
-GO
+GO 
+/* GO is a signal to send the current batch of Transact-SQL statements 
+to an instance of SQL Server.  The scope of local (user-defined) variables is limited to a batch, 
+and cannot be referenced after a GO command.
+*/
 
 CREATE TABLE DimCustomer (
-	Cust_Key int identity not null,					-- Surrogate key for Dimension Table
+	Customer_Key int identity not null,					-- Surrogate key for Dimension Table
 	Customer_ID nvarchar(3) not null,				-- customer natural key
 	Customer_First_Name nvarchar(20) null,
 	Customer_Surname nvarchar(20) null,				-- note not null may not always be true	
- Primary Key (Cust_Key)
+ Primary Key (Customer_Key)
  )
 
- -- Need a dimension table for address 
- --	as a customer can have several addresses and it would
- --	create confusion when joining customer with sale transaction
- --	if it appeared 2 customers with different addresses were on the same sale transaction
+ /* Need a dimension table for address 
+ as a customer can have several addresses and it would
+ create confusion when joining customer with sale transaction
+ if it appeared 2 customers with different addresses were on the same sale transaction
+*/
+
  CREATE TABLE DimAddress (
 	Customer_Address_Key int identity not null,			-- Surrogate key for Dimension Table
 	Customer_Address_Line_1 nvarchar(30) null,			
@@ -207,20 +209,21 @@ CREATE TABLE DimItem (
 	Item_ID	nvarchar(5)	null,						-- Natural item key
 	Item_Description nvarchar(30) null,
 
- Primary Key (Item_Key)
- )
+    Primary Key (Item_Key)
+    )
 
 CREATE TABLE DimDate (
 	Date_Key int identity not null,
-	Date_ID date not null,							--This will be the datekey and the actual date, although in 
-													--	DataMarts it is usually a surrogate key that has a YYYYMMDD format
-													--	 to allow joins across all table and date formats
-	Date_Month int	null,							--Can calculate Month from date
+	Date_ID date not null,							
+/*This will be the datekey and the actual date, although in
+DataMarts it is usually a surrogate key that has a YYYYMMDD format
+to allow joins across all table and date formats*/
+	Date_Month int	null, -- Can calculate Month from date
 	Date_Quarter int null,
 	Date_Year int null,
 
- Primary Key (Date_Key)
- )
+    Primary Key (Date_Key)
+    )
 
 --We now create the Fact Table for each Sale transaction.
 --Assume there is a business rule that states there are only 2 items per transaction 
@@ -246,8 +249,106 @@ CREATE TABLE DimDate (
  FOREIGN KEY (Item_1_Key) REFERENCES DimItem (Item_Key),
  FOREIGN KEY (Item_2_Key) REFERENCES DImItem (Item_Key),
  FOREIGN KEY (Sale_Date_Key)  REFERENCES DimDate (Date_Key),
- FOREIGN KEY (Customer_Key) REFERENCES DimCustomer (Cust_Key),
+ FOREIGN KEY (Customer_Key) REFERENCES DimCustomer (Customer_Key),
  FOREIGN KEY (Staff_Key) REFERENCES DimStaff (Staff_Key)
  )							
 
  GO
+
+ ---------------------------------------------------
+
+-- 5.0 Lastly, copy data into created schema tables. 
+
+--  Populate the DataMart Star Schema tables from Lab4DataStaging table.
+
+INSERT INTO DimDate 
+(Date_ID, Date_Month, Date_Quarter, Date_Year)
+SELECT distinct Cast(Lab4DataStaging.[Sale_Date] AS date), 
+                Datepart(month, Lab4DataStaging.[Sale_Date]), 
+                Datepart(quarter, Lab4DataStaging.[Sale_Date]), 
+                Datepart(year, Lab4DataStaging.[Sale_Date]) 
+FROM Lab4DataStaging
+
+
+Insert into DimCustomer
+(Customer_ID, Customer_First_Name, Customer_Surname)
+SELECT distinct Lab4DataStaging.[Customer_ID], 
+                Lab4DataStaging.[Customer_First_name], 
+                Lab4DataStaging.[Customer_Surname]
+FROM Lab4DataStaging
+
+
+Insert into DimAddress
+(Customer_Address_Line_1, Customer_Address_Line_2, Customer_Address_Suburb, Customer_Address_Postal_Code)
+SELECT distinct Lab4DataStaging.[Customer_Address_Line_1],
+                Lab4DataStaging.[Customer_Address_Line_2], 
+                Lab4DataStaging.[Customer_Address_Suburb], 
+                Lab4DataStaging.[Customer_Address_Postal_Code]
+FROM Lab4DataStaging
+
+
+
+Insert into DimStaff
+ (Staff_ID, Staff_First_Name, Staff_Surname)
+SELECT distinct Lab4DataStaging.[staff_ID],
+                Lab4DataStaging.[Staff_First_Name], 
+                Lab4DataStaging.[Staff_Surname]
+FROM Lab4DataStaging
+
+
+--Get the unique Item Id's and match their description
+Insert into DimItem 
+(Item_ID)
+SELECT  Lab4DataStaging.[item_1_id] from Lab4DataStaging
+UNION
+SELECT distinct Lab4DataStaging.[Item_2_Id] from Lab4DataStaging
+WHERE item_1_id <> [Item_2_Id] AND [Item_2_Id] IS NOT NULL
+
+
+/*SELECT distinct (Lab4DataStaging.[Item_1_ID] + Lab4DataStaging.[Item_2_Id]) from Lab4DataStaging 
+where item_1_id <> [Item_2_Id] AND [Item_2_Id] IS NOT NULL
+*/
+
+
+--Insert the matching description
+Update DimItem
+Set DimItem.Item_Description = Lab4DataStaging.[Item_1_Description] 
+FROM DimItem left join Lab4DataStaging
+ON DimItem.Item_ID = Lab4DataStaging.Item_1_ID
+OR DimItem.Item_ID = Lab4DataStaging.[Item_2_Id]
+
+
+--Now Populate the Fact Table
+INSERT INTO FactSale
+(Receipt_Unique_Key, Sale_Date_Key, Customer_Key, Customer_Address_Key, Staff_Key, Item_1_Key, Item_1_Quantity, Item_1_Unit_Price, Item_1_Sub_Total,
+	Item_2_Key, Item_2_Quantity, Item_2_Unit_Price, Item_2_Sub_Total, Total_Items_In_Sale, Receipt_Total_Sale_Amount)
+	  
+  SELECT  x.[Receipt_Unique_Id],
+          d.[Date_Key], 
+          c.[Customer_Key], 
+          a.[Customer_Address_Key], 
+          s.[Staff_Key], 
+          i.[Item_Key], 
+          x.[Item_1_Quantity], 
+          x.[Item_1_Unit_Price],
+          x.[Item_1_Sub_Total],
+          p.[Item_Key],
+          x.[Item_2_Quantity],
+          x.[Item_2_Unit_Price], 
+          x.[Item_2_Sub_Total], 
+          x.[Total_Items_in_Sale], 
+          x.[Receipt_Total_Sale_Amount]
+  FROM
+  Lab4DataStaging x
+	left join DImStaff s
+		on s.Staff_ID = x.[Staff_Id]
+	left Join DimAddress a	
+		on x.[Customer_Address_Line_1] = a.Customer_Address_Line_1
+	left join DimCustomer c
+		on x.[Customer_ID] = c.Customer_ID
+	left join DimDate d
+		on x.[Sale_Date] = d.Date_ID
+	Left join DImItem i
+		on x.item_1_id = i.Item_ID
+	left join DimItem p
+		on x.[Item_2_Id] = p.Item_ID 
