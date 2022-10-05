@@ -255,6 +255,8 @@ to allow joins across all table and date formats*/
 
  GO
 
+
+
  ---------------------------------------------------
 
 -- 5.0 Lastly, copy data into created schema tables. 
