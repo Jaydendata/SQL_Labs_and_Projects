@@ -13,7 +13,7 @@ CREATE DATABASE INFO6090_Week4Lab_Data
 SELECT * FROM [dbo].[INFO6090 Week 4 Lab dataset];
 
 -- Rename the table to 'RawData' 
-EXEC sp_rename 'INFO6090 Week 4 Lab dataset', 'RawData';
+EXEC sp_rename 'INFO6090 Week 4 Lab dataset', 'RawData'; 
 
 
 ----------------------------------------------------------------
