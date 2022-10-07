@@ -156,3 +156,64 @@ LEFT JOIN DimStaff ON DimStaff.Staff_ID = base.[Staff_ID]
 LEFT JOIN DimOffice ON DimOffice.Staff_Office_Key = base.[Staff_office]
 LEFT JOIN DimItem ON DimItem.Item_ID = base.[Item_ID];
 
+
+-- 5.0 Data Exploration for Basic Analysis
+
+-- 5.1 Find out the top customers who puchased total value more than 30,000, identified top 7 customers.
+
+SELECT TOP 10 DimCustomer.Customer_ID
+	,Customer_First_Name
+	,Customer_Surname
+	,SUM(Row_Total) AS Transaction_value
+FROM DimCustomer
+INNER JOIN FactSale ON DimCustomer.Customer_ID = FactSale.Customer_ID
+GROUP BY DimCustomer.Customer_ID
+	,DimCustomer.Customer_First_Name
+	,DimCustomer.Customer_Surname
+HAVING SUM(Row_Total) >= 30000
+ORDER BY SUM(Row_Total) DESC;
+
+-- 5.2 Rank the staff by their total sales value
+
+SELECT DimStaff.Staff_ID
+	,Staff_First_Name
+	,Staff_Surname
+	,SUM(Row_Total) AS Total_Sales
+FROM DimStaff
+INNER JOIN FactSale ON DimStaff.Staff_ID = FactSale.Staff_ID
+GROUP BY DimStaff.Staff_ID
+	,Staff_First_Name
+	,Staff_Surname
+ORDER BY SUM(Row_Total) DESC;
+
+-- 5.3 Appraisal based on each staff's customer numbers
+
+SELECT Staff_ID
+	,COUNT(DISTINCT DimCustomer.Customer_ID) AS Customer_Number
+FROM FactSale
+INNER JOIN DimCustomer ON DimCustomer.Customer_ID = FactSale.Customer_ID
+GROUP BY Staff_ID
+ORDER BY Customer_Number DESC;
+
+-- 5.4 Find out each staff's total sales in 2021 and 2022 repectively
+
+SELECT Staff_ID
+	,Date_Year
+	,SUM(Row_Total) AS Total_Sales
+FROM FactSale
+INNER JOIN DimDate ON DimDate.Date_Key = FactSale.Date_Key
+WHERE Date_Year = 2021
+GROUP BY Staff_ID
+	,Date_Year
+ORDER BY Total_Sales DESC;
+
+
+SELECT Staff_ID
+	,Date_Year
+	,SUM(Row_Total) AS Total_Sales
+FROM FactSale
+INNER JOIN DimDate ON DimDate.Date_Key = FactSale.Date_Key
+WHERE Date_Year = 2022
+GROUP BY Staff_ID
+	,Date_Year
+ORDER BY Total_Sales DESC;
