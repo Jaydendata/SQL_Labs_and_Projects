@@ -89,5 +89,70 @@ CREATE TABLE FactSale
 
 );
 
--- 4.0 
+-- 4.0 Copy values from Base (interim table) to tables in the star schema
+
+-- 4.1 First clean data by deleting null values - deleted one row
+
+DELETE FROM [dbo].[Base]
+WHERE [Customer_ID] IS NULL
+
+-- 4.2 Import data from Base to Dimention tables
+
+INSERT INTO [dbo].[DimCustomer](Customer_ID, Customer_First_Name, Customer_Surname)
+SELECT DISTINCT Base.[Customer_ID], Base.[Customer_First_Name], Base.[Customer_Surname]
+FROM Base;
+
+INSERT INTO DimOffice (Staff_Office_Key, Staff_Office_Location)
+Select Distinct Base.[Staff_office], Base.[Office_Location]
+FROM Base;
+
+INSERT INTO DimItem (Item_ID, Item_Description)
+Select DISTINCT Base.[Item_ID], Base.[Item_Description]
+FROM Base;
+
+UPDATE Base -- Data cleaning to correct duplicated Staff IDs
+SET [Staff ID] = 'S20' 
+where [Staff First Name] = 'Molly'
+
+INSERT INTO DimStaff (Staff_ID, Staff_First_Name, Staff_Surname)
+Select DISTINCT Base.[Staff_ID], Base.[Staff_First_Name],Base.[Staff_Surname]
+FROM Base;
+
+INSERT INTO DimDate (Date_ID, Date_Month, Date_Quarter, Date_Year)
+SELECT DISTINCT CAST(Base.[Sale_Date] As Date), 
+                DATEPART(Month, Base.[Sale_Date]), 
+                DATEPART(Quarter, Base.[Sale_Date]),
+                DATEPART(Year,Base.[Sale_Date])
+FROM Base;
+
+-- 4.3, Lastly, copy data into the Fact sheet by joining the base and dimension tables
+
+INSERT INTO FactSale (
+	Loyalty
+	,Date_Key
+	,Customer_ID
+	,Staff_ID
+	,Item_ID
+	,Item_Quantity
+	,Item_Price
+	,Row_Total
+	,Receipt_Transaction_Row
+	,Receipt_id
+	)
+SELECT Base.Loyalty
+	,DimDate.Date_Key
+	,DimCustomer.Customer_ID
+	,DimStaff.Staff_ID
+	,DimItem.Item_ID
+	,base.Item_Quantity
+	,base.Item_Price
+	,base.Row_Total
+	,base.Reciept_Transaction_Row_ID
+	,base.Reciept_Id
+FROM Base
+LEFT JOIN DimDate ON DimDate.Date_ID = Base.[Sale_Date]
+LEFT JOIN DimCustomer ON DimCustomer.Customer_ID = base.[Customer_ID]
+LEFT JOIN DimStaff ON DimStaff.Staff_ID = base.[Staff_ID]
+LEFT JOIN DimOffice ON DimOffice.Staff_Office_Key = base.[Staff_office]
+LEFT JOIN DimItem ON DimItem.Item_ID = base.[Item_ID];
 
