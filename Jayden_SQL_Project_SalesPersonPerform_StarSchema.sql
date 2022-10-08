@@ -157,6 +157,9 @@ LEFT JOIN DimOffice ON DimOffice.Staff_Office_Key = base.[Staff_office]
 LEFT JOIN DimItem ON DimItem.Item_ID = base.[Item_ID];
 
 
+
+
+
 -- 5.0 Data Exploration for Basic Analysis
 
 -- 5.1 Find out the top customers who puchased total value more than 30,000, identified top 7 customers.
@@ -186,6 +189,22 @@ GROUP BY DimStaff.Staff_ID
 	,Staff_Surname
 ORDER BY SUM(Row_Total) DESC;
 
+-- 5.3 Rank staff based on their total sales sizes from top 7 customers who bought > 30k
+
+SELECT FactSale.Staff_ID, 
+ROUND(SUM(CASE WHEN FactSale.Customer_ID = 'C715' then FactSale.Row_Total end),0) as Sales_to_C715, 
+ROUND(SUM(CASE WHEN FactSale.Customer_ID = 'C712' then FactSale.Row_Total end),0) as Sales_to_C712, 
+ROUND(SUM(CASE WHEN FactSale.Customer_ID = 'C19' then FactSale.Row_Total end),0) as Sales_to_C19, 
+ROUND(SUM(CASE WHEN FactSale.Customer_ID = 'C49' then FactSale.Row_Total end),0) as Sales_to_C49, 
+ROUND(SUM(CASE WHEN FactSale.Customer_ID = 'C43' then FactSale.Row_Total end),0) as Sales_to_C43, 
+ROUND(SUM(CASE WHEN FactSale.Customer_ID = 'C18' then FactSale.Row_Total end),0) as Sales_to_C18, 
+ROUND(SUM(CASE WHEN FactSale.Customer_ID = 'C14' then FactSale.Row_Total end),0) as Sales_to_C715, 
+ROUND(SUM(CASE WHEN FactSale.Customer_ID is not null then FactSale.Row_Total end),0) as Total_Sales_by_Staff_to_all_Customers, 
+RANK () OVER(ORDER BY ROUND(SUM(CASE WHEN FactSale.Customer_ID is not null then FactSale.Row_Total end),0) DESC) as Staff_Ranking 
+FROM FactSale 
+GROUP BY FactSale.Staff_ID 
+Order by Staff_Ranking; 
+
 -- 5.3 Appraisal based on each staff's customer numbers
 
 SELECT Staff_ID
@@ -197,23 +216,9 @@ ORDER BY Customer_Number DESC;
 
 -- 5.4 Find out each staff's total sales in 2021 and 2022 repectively
 
-SELECT Staff_ID
-	,Date_Year
-	,SUM(Row_Total) AS Total_Sales
-FROM FactSale
-INNER JOIN DimDate ON DimDate.Date_Key = FactSale.Date_Key
-WHERE Date_Year = 2021
-GROUP BY Staff_ID
-	,Date_Year
-ORDER BY Total_Sales DESC;
+SELECT FactSale.Staff_ID, 
+ROUND(SUM(CASE WHEN DimDate.Date_Year = 2021 then FactSale.Row_Total end),0) as Sales_2021, 
+ROUND(SUM(CASE WHEN DimDate.Date_Year = 2022 then FactSale.Row_Total end),0) as Sales_2022 
+From FactSale inner join DimDate on FactSale.Date_Key = DimDate.Date_Key 
+GROUP BY Staff_ID; 
 
-
-SELECT Staff_ID
-	,Date_Year
-	,SUM(Row_Total) AS Total_Sales
-FROM FactSale
-INNER JOIN DimDate ON DimDate.Date_Key = FactSale.Date_Key
-WHERE Date_Year = 2022
-GROUP BY Staff_ID
-	,Date_Year
-ORDER BY Total_Sales DESC;
